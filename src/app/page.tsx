@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { analyzeWebsiteContent, type AnalyzeWebsiteContentOutput } from '@/ai/flows/analyze-website-content';
-import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle, Trash2, History, Moon, Sun, RotateCcw, VerifiedIcon } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle, Trash2, History, Moon, Sun, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -71,13 +71,25 @@ export default function Home() {
   useEffect(() => {
     const storedHistory = localStorage.getItem('analysisHistory');
     if (storedHistory) {
-      setAnalysisHistory(JSON.parse(storedHistory));
+      try {
+        const parsedHistory = JSON.parse(storedHistory);
+        if (Array.isArray(parsedHistory)) {
+          setAnalysisHistory(parsedHistory);
+        } else {
+          setAnalysisHistory([]);
+          localStorage.removeItem('analysisHistory');
+        }
+      } catch (error) {
+        console.error("Failed to parse analysis history:", error);
+        setAnalysisHistory([]);
+        localStorage.removeItem('analysisHistory');
+      }
     }
   }, []);
 
   const saveHistory = (newResult: AnalysisResult) => {
     setAnalysisHistory(prevHistory => {
-      const updatedHistory = [newResult, ...prevHistory.slice(0, 9)]; // Keep last 10 results
+      const updatedHistory = [newResult, ...prevHistory.filter(item => item.url !== newResult.url).slice(0, 9)]; // Keep last 10 unique results
       localStorage.setItem('analysisHistory', JSON.stringify(updatedHistory));
       return updatedHistory;
     });
@@ -104,6 +116,7 @@ export default function Home() {
 
     try {
       const fetchResponse = await fetch(`/api/fetch-content?url=${encodeURIComponent(data.url)}`);
+      
       if (!fetchResponse.ok) {
         let errorMessage = `Failed to fetch website content (status: ${fetchResponse.status})`;
         try {
@@ -117,7 +130,7 @@ export default function Home() {
       const { content: websiteContent } = await fetchResponse.json();
 
       if (!websiteContent) {
-        throw new Error('Fetched content is empty.');
+        throw new Error('Fetched content is empty. The website might be protected or inaccessible.');
       }
 
       const result = await analyzeWebsiteContent({ url: data.url, content: websiteContent });
@@ -131,7 +144,19 @@ export default function Home() {
     } catch (error) {
       console.error('Analysis failed:', error);
       setAnalysisResult(null);
-      const errorMessage = error instanceof Error ? error.message : "Could not analyze the website. Please check the URL or try again later.";
+      let errorMessage = "Could not analyze the website. Please check the URL or try again later.";
+      if (error instanceof Error) {
+        // Prepend "An error occurred while fetching content: " to the error message
+        // if it's not already present and doesn't seem to be a custom message from our flow.
+        const genericFetchPrefix = "An error occurred while fetching content: ";
+        const knownErrorPrefixes = ["Failed to fetch website content", "Fetched content is empty"];
+        
+        if (!knownErrorPrefixes.some(prefix => error.message.startsWith(prefix)) && !error.message.startsWith(genericFetchPrefix)) {
+          errorMessage = `${genericFetchPrefix}${error.message}`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
       toast({
         variant: "destructive",
         title: "Analysis Failed",
@@ -153,36 +178,36 @@ export default function Home() {
   
   const getReputationCategoryColor = (score: number | undefined): string => {
     if (score === undefined) return 'text-muted-foreground';
-    if (score >= 90) return 'text-purple-600';
-    if (score >= 70) return 'text-green-500';
-    if (score >= 50) return 'text-orange-500';
-    if (score >= 30) return 'text-yellow-500';
-    return 'text-red-500';
+    if (score >= 90) return 'text-purple-600 dark:text-purple-400';
+    if (score >= 70) return 'text-green-500 dark:text-green-400';
+    if (score >= 50) return 'text-orange-500 dark:text-orange-400';
+    if (score >= 30) return 'text-yellow-500 dark:text-yellow-400';
+    return 'text-red-500 dark:text-red-400';
   };
 
 
   const getThreatLevelColor = (level: string | undefined): string => {
     switch (level?.toLowerCase()) {
-      case 'high': return 'text-red-500';
-      case 'medium': return 'text-yellow-500';
-      case 'low': return 'text-blue-500'; // Kept as blue for AI, distinct from reputation's 'low'
-      case 'safe': return 'text-green-500';
+      case 'high': return 'text-red-500 dark:text-red-400';
+      case 'medium': return 'text-yellow-500 dark:text-yellow-400';
+      case 'low': return 'text-blue-500 dark:text-blue-400';
+      case 'safe': return 'text-green-500 dark:text-green-400';
       default: return 'text-muted-foreground';
     }
   };
 
   const getThreatLevelIcon = (level: string | undefined): React.ReactNode => {
      switch (level?.toLowerCase()) {
-      case 'high': return <ShieldX className="h-5 w-5 text-red-500" />;
-      case 'medium': return <ShieldAlert className="h-5 w-5 text-yellow-500" />;
-      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500" />; // Kept as blue ShieldCheck
-      case 'safe': return <ShieldCheck className="h-5 w-5 text-green-500" />;
+      case 'high': return <ShieldX className="h-5 w-5 text-red-500 dark:text-red-400" />;
+      case 'medium': return <ShieldAlert className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />;
+      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500 dark:text-blue-400" />;
+      case 'safe': return <ShieldCheck className="h-5 w-5 text-green-500 dark:text-green-400" />;
       default: return <ShieldQuestion className="h-5 w-5 text-muted-foreground" />;
     }
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/30">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center">
@@ -205,7 +230,7 @@ export default function Home() {
           </p>
         </section>
 
-        <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg">
+        <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg dark:shadow-primary/20">
           <CardHeader>
             <CardTitle>Enter Website URL</CardTitle>
             <CardDescription>We'll analyze the content and reputation for security risks.</CardDescription>
@@ -238,7 +263,7 @@ export default function Home() {
                 </Button>
               </form>
             </Form>
-             <Alert variant="default" className="mt-4 bg-secondary/50 border-secondary">
+             <Alert variant="default" className="mt-4 bg-secondary/50 border-secondary dark:bg-secondary/30 dark:border-secondary/50">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Note</AlertTitle>
                 <AlertDescription>
@@ -256,19 +281,19 @@ export default function Home() {
         )}
 
         {analysisResult && !isLoading && (
-          <Card className="w-full max-w-2xl mx-auto shadow-lg animate-in fade-in duration-500 mb-12">
+          <Card className="w-full max-w-3xl mx-auto shadow-lg animate-in fade-in duration-500 mb-12 dark:shadow-primary/20">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                 <span>Analysis Results</span>
-                 <a href={analysisResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center">
-                   {analysisResult.url} <ExternalLink className="ml-1 h-4 w-4" />
+                 <a href={analysisResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center break-all">
+                   {analysisResult.url} <ExternalLink className="ml-1 h-4 w-4 flex-shrink-0" />
                  </a>
               </CardTitle>
               <CardDescription>Summary of the security analysis for the provided URL. Analyzed on {new Date(analysisResult.timestamp).toLocaleString()}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 border">
-                 <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 dark:bg-secondary/20 border dark:border-secondary/40">
+                 <div className='flex-1'>
                     <h3 className="text-lg font-semibold mb-1 flex items-center">
                       {getThreatLevelIcon(analysisResult.threatLevel)}
                       <span className="ml-2">AI Threat Assessment</span>
@@ -280,8 +305,8 @@ export default function Home() {
                  </div>
               </div>
 
-               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 border">
-                 <div>
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 dark:bg-secondary/20 border dark:border-secondary/40">
+                 <div className='flex-1'>
                     <h3 className="text-lg font-semibold mb-1 flex items-center">
                       {getSafetyIndicator(analysisResult.reputationScore)}
                       <span className="ml-2">Domain Reputation: <span className={`${getReputationCategoryColor(analysisResult.reputationScore)} font-semibold`}>{analysisResult.reputationCategory}</span></span>
@@ -289,8 +314,8 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground mt-1">{analysisResult.reputationDescription || 'No reputation details available.'}</p>
                  </div>
                  <div className="text-center w-full sm:w-auto mt-2 sm:mt-0">
-                   <div className={`text-3xl font-bold ${getReputationCategoryColor(analysisResult.reputationScore)}`}>{analysisResult.reputationScore ?? '--'} / 100</div>
-                   <Progress value={analysisResult.reputationScore} className="w-full sm:w-24 h-2 mt-2" aria-label={`Reputation Score: ${analysisResult.reputationScore ?? 'Unknown'} out of 100`} />
+                   <div className={`text-xl font-bold ${getReputationCategoryColor(analysisResult.reputationScore)}`}>{analysisResult.reputationScore ?? '--'} / 100</div>
+                   <Progress value={analysisResult.reputationScore} className="w-full sm:w-28 h-2 mt-2" aria-label={`Reputation Score: ${analysisResult.reputationScore ?? 'Unknown'} out of 100`} />
                  </div>
               </div>
 
@@ -304,7 +329,7 @@ export default function Home() {
                  </Alert>
               )}
                {analysisResult.threatLevel?.toLowerCase() === 'medium' && (
-                 <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-300">
+                 <Alert variant="default" className="bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-700 dark:text-yellow-300">
                    <AlertCircle className="h-4 w-4" />
                    <AlertTitle>Potential Risk</AlertTitle>
                    <AlertDescription>
@@ -317,7 +342,7 @@ export default function Home() {
         )}
 
         {analysisHistory.length > 0 && (
-          <Card className="w-full max-w-2xl mx-auto shadow-lg mb-12">
+          <Card className="w-full max-w-3xl mx-auto shadow-lg mb-12 dark:shadow-primary/20">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Analysis History</CardTitle>
@@ -332,16 +357,16 @@ export default function Home() {
                 <ul className="space-y-4">
                   {analysisHistory.map((item) => (
                     <li key={item.timestamp}>
-                      <Card className="bg-secondary/20 hover:shadow-md transition-shadow">
+                      <Card className="bg-secondary/20 dark:bg-secondary/10 hover:shadow-md transition-shadow dark:hover:shadow-primary/10">
                         <CardHeader className="pb-2">
-                           <div className="flex justify-between items-start">
-                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline truncate flex-1 mr-2" title={item.url}>
+                           <div className="flex justify-between items-start flex-wrap gap-x-2 gap-y-1">
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline truncate flex-1 mr-2 min-w-[100px]" title={item.url}>
                                 {item.url}
                             </a>
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                                 {getThreatLevelIcon(item.threatLevel)}
                                 <span className={`ml-1 font-medium ${getThreatLevelColor(item.threatLevel)}`}>{item.threatLevel?.charAt(0).toUpperCase() + item.threatLevel?.slice(1)}</span>
-                                <span className="mx-2">|</span>
+                                <span className="mx-1 sm:mx-2">|</span>
                                 {getSafetyIndicator(item.reputationScore)}
                                 <span className={`ml-1 font-medium ${getReputationCategoryColor(item.reputationScore)}`}>{item.reputationScore}/100 ({item.reputationCategory})</span>
                             </div>
@@ -372,7 +397,7 @@ export default function Home() {
           </Card>
         )}
 
-        <section className="mt-16 text-center py-12 bg-secondary/50 rounded-lg border">
+        <section className="mt-16 text-center py-12 bg-secondary/50 dark:bg-secondary/20 rounded-lg border dark:border-secondary/40">
            <h2 className="text-2xl font-semibold mb-4 text-primary">Stay Safe While Browsing</h2>
            <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
              Integrate SecureSurf directly into your browser for real-time protection as you navigate the web. Get instant safety ratings and warnings without needing to manually check URLs.
