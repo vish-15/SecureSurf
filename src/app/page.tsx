@@ -1,7 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -15,22 +16,27 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { analyzeWebsiteContent, type AnalyzeWebsiteContentOutput } from '@/ai/flows/analyze-website-content';
-import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle, Trash2, History, Moon, Sun, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 const FormSchema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL (e.g., https://example.com)' }),
 });
 
-type AnalysisResult = AnalyzeWebsiteContentOutput & { url: string };
+type AnalysisResult = AnalyzeWebsiteContentOutput & { url: string; timestamp: number };
+type AnalysisHistoryItem = AnalysisResult;
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistoryItem[]>([]);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -40,19 +46,78 @@ export default function Home() {
     },
   });
 
+  // Theme Management
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
+    setCurrentTheme(initialTheme);
+  }, []);
+
+  useEffect(() => {
+    if (currentTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', currentTheme);
+  }, [currentTheme]);
+
+  const toggleTheme = () => {
+    setCurrentTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
+
+  // Analysis History Management
+  useEffect(() => {
+    const storedHistory = localStorage.getItem('analysisHistory');
+    if (storedHistory) {
+      setAnalysisHistory(JSON.parse(storedHistory));
+    }
+  }, []);
+
+  const saveHistory = (newResult: AnalysisResult) => {
+    setAnalysisHistory(prevHistory => {
+      const updatedHistory = [newResult, ...prevHistory.slice(0, 9)]; // Keep last 10 results
+      localStorage.setItem('analysisHistory', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+  };
+
+  const clearHistory = () => {
+    setAnalysisHistory([]);
+    localStorage.removeItem('analysisHistory');
+    toast({
+      title: "History Cleared",
+      description: "Your analysis history has been cleared.",
+    });
+  };
+
+  const handleReanalyze = (url: string) => {
+    form.setValue('url', url);
+    onSubmit({ url });
+  };
+
+
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsLoading(true);
-    setAnalysisResult(null); // Clear previous results
+    setAnalysisResult(null);
 
     try {
-      // Fetch website content (placeholder - in a real app, this would be a server-side call for security)
-      // For this example, we'll simulate fetching and send a placeholder content.
-      // Note: Directly fetching arbitrary URLs client-side is generally insecure and blocked by CORS.
-      // This should be handled by a backend endpoint that fetches the content.
-      const simulatedContent = `<html><head><title>Example</title></head><body>Example Content for ${data.url}</body></html>`;
+      const fetchResponse = await fetch(`/api/fetch-content?url=${encodeURIComponent(data.url)}`);
+      if (!fetchResponse.ok) {
+        const errorData = await fetchResponse.json();
+        throw new Error(errorData.error || `Failed to fetch website content (status: ${fetchResponse.status})`);
+      }
+      const { content: websiteContent } = await fetchResponse.json();
 
-      const result = await analyzeWebsiteContent({ url: data.url, content: simulatedContent });
-      setAnalysisResult({ ...result, url: data.url });
+      if (!websiteContent) {
+        throw new Error('Fetched content is empty.');
+      }
+
+      const result = await analyzeWebsiteContent({ url: data.url, content: websiteContent });
+      const resultWithTimestamp = { ...result, url: data.url, timestamp: Date.now() };
+      setAnalysisResult(resultWithTimestamp);
+      saveHistory(resultWithTimestamp);
       toast({
         title: "Analysis Complete",
         description: `Finished analyzing ${data.url}`,
@@ -60,10 +125,11 @@ export default function Home() {
     } catch (error) {
       console.error('Analysis failed:', error);
       setAnalysisResult(null);
+      const errorMessage = error instanceof Error ? error.message : "Could not analyze the website. Please check the URL or try again later.";
       toast({
         variant: "destructive",
         title: "Analysis Failed",
-        description: "Could not analyze the website. Please check the URL or try again later.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -91,7 +157,7 @@ export default function Home() {
      switch (level?.toLowerCase()) {
       case 'high': return <ShieldX className="h-5 w-5 text-red-500" />;
       case 'medium': return <ShieldAlert className="h-5 w-5 text-yellow-500" />;
-      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500" />; // Using check for low risk
+      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500" />;
       case 'safe': return <ShieldCheck className="h-5 w-5 text-green-500" />;
       default: return <ShieldQuestion className="h-5 w-5 text-muted-foreground" />;
     }
@@ -100,14 +166,14 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="mr-4 flex items-center">
+        <div className="container flex h-14 items-center justify-between">
+          <div className="flex items-center">
              <ShieldCheck className="h-6 w-6 mr-2 text-primary" />
             <span className="font-bold text-lg">SecureSurf</span>
           </div>
-          {/* <nav className="flex items-center space-x-6 text-sm font-medium">
-             Could add navigation links here if needed
-          </nav> */}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+            {currentTheme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </Button>
         </div>
       </header>
 
@@ -172,7 +238,7 @@ export default function Home() {
         )}
 
         {analysisResult && !isLoading && (
-          <Card className="w-full max-w-2xl mx-auto shadow-lg animate-in fade-in duration-500">
+          <Card className="w-full max-w-2xl mx-auto shadow-lg animate-in fade-in duration-500 mb-12">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Analysis Results</span>
@@ -180,7 +246,7 @@ export default function Home() {
                    {analysisResult.url} <ExternalLink className="ml-1 h-4 w-4" />
                  </a>
               </CardTitle>
-              <CardDescription>Summary of the security analysis for the provided URL.</CardDescription>
+              <CardDescription>Summary of the security analysis for the provided URL. Analyzed on {new Date(analysisResult.timestamp).toLocaleString()}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 border">
@@ -194,7 +260,6 @@ export default function Home() {
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">{analysisResult.threatDescription || 'No specific threats described.'}</p>
                  </div>
-
               </div>
 
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-md bg-secondary/30 border">
@@ -210,7 +275,6 @@ export default function Home() {
                    <Progress value={analysisResult.reputationScore} className="w-full sm:w-24 h-2 mt-2" aria-label={`Reputation Score: ${analysisResult.reputationScore ?? 'Unknown'} out of 100`} />
                  </div>
               </div>
-
 
               {analysisResult.threatLevel?.toLowerCase() === 'high' && (
                  <Alert variant="destructive">
@@ -230,8 +294,62 @@ export default function Home() {
                    </AlertDescription>
                  </Alert>
               )}
+            </CardContent>
+          </Card>
+        )}
 
-
+        {analysisHistory.length > 0 && (
+          <Card className="w-full max-w-2xl mx-auto shadow-lg mb-12">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Analysis History</CardTitle>
+                <CardDescription>Your recent website analyses.</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={clearHistory} aria-label="Clear history">
+                <Trash2 className="mr-2 h-4 w-4" /> Clear
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px] pr-4">
+                <ul className="space-y-4">
+                  {analysisHistory.map((item) => (
+                    <li key={item.timestamp}>
+                      <Card className="bg-secondary/20 hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-2">
+                           <div className="flex justify-between items-start">
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline truncate flex-1 mr-2" title={item.url}>
+                                {item.url}
+                            </a>
+                            <div className="flex items-center text-sm text-muted-foreground">
+                                {getThreatLevelIcon(item.threatLevel)}
+                                <span className={`ml-1 font-medium ${getThreatLevelColor(item.threatLevel)}`}>{item.threatLevel?.charAt(0).toUpperCase() + item.threatLevel?.slice(1)}</span>
+                                <span className="mx-2">|</span>
+                                {getSafetyIndicator(item.reputationScore)}
+                                <span className="ml-1">{item.reputationScore}/100</span>
+                            </div>
+                           </div>
+                          <p className="text-xs text-muted-foreground pt-1">
+                            Analyzed: {new Date(item.timestamp).toLocaleString()}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="pb-3 pt-0">
+                           <p className="text-sm text-muted-foreground truncate" title={item.threatDescription}>
+                             AI: {item.threatDescription || 'No specific threats described.'}
+                           </p>
+                           <p className="text-sm text-muted-foreground truncate" title={item.reputationDescription}>
+                             Reputation: {item.reputationDescription || 'No reputation details available.'}
+                           </p>
+                        </CardContent>
+                        <CardFooter className="pt-0 pb-3">
+                           <Button variant="ghost" size="sm" onClick={() => handleReanalyze(item.url)} className="text-primary hover:text-primary/80">
+                             <RotateCcw className="mr-2 h-4 w-4" /> Re-analyze
+                           </Button>
+                        </CardFooter>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
             </CardContent>
           </Card>
         )}
@@ -253,11 +371,10 @@ export default function Home() {
           <div className="text-center text-sm text-muted-foreground md:text-left">
             © {new Date().getFullYear()} SecureSurf. All rights reserved.
           </div>
-          {/* <nav className="flex items-center gap-4 text-sm text-muted-foreground md:gap-6">
-             Optional footer links
-          </nav> */}
         </div>
       </footer>
     </div>
   );
 }
+
+    

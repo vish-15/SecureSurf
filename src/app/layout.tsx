@@ -1,16 +1,17 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Changed from Geist to Inter
-import './globals.css';
-import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
-const inter = Inter({ // Changed from geistSans/geistMono to Inter
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Toaster } from "@/components/ui/toaster";
+
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-sans', // Use standard variable name
+  variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
-  title: 'SecureSurf', // Updated title
-  description: 'Analyze website security in real-time.', // Updated description
+  title: 'SecureSurf',
+  description: 'Analyze website security in real-time.',
 };
 
 export default function RootLayout({
@@ -20,10 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}> {/* Apply Inter font class */}
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
-        <Toaster /> {/* Add Toaster component */}
+        <Toaster />
       </body>
     </html>
   );
 }
+
+    
