@@ -69,11 +69,38 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error(`Error fetching URL (${urlString}):`, error);
+
+    let reportableErrorMessage: string;
+
     if (error.name === 'AbortError') {
-      return NextResponse.json({ error: 'Request timed out while fetching content.' }, { status: 504 });
+      reportableErrorMessage = 'Request timed out while fetching content.';
+      return NextResponse.json({ error: reportableErrorMessage }, { status: 504 });
     }
-    return NextResponse.json({ error: `An error occurred while fetching content: ${error.message || 'Unknown error'}` }, { status: 500 });
+
+    let diagnostics = '';
+    if (error.message) {
+      diagnostics += error.message;
+    }
+
+    // Check for Node.js style error codes directly on the error or its cause
+    const nodeErrorCode = error.code || (error.cause && typeof error.cause === 'object' && error.cause.code);
+    if (nodeErrorCode) {
+      diagnostics += ` (Code: ${nodeErrorCode})`;
+    } else if (error.cause && typeof error.cause === 'object' && error.cause.message) {
+      // Fallback to cause message if no specific code but cause exists
+      diagnostics += ` (Cause: ${error.cause.message})`;
+    } else if (error.cause && typeof error.cause === 'string') {
+      // Handle if cause is just a string
+       diagnostics += ` (Cause: ${error.cause})`;
+    }
+
+
+    if (diagnostics) {
+      reportableErrorMessage = `Error fetching '${urlString}': ${diagnostics}.`;
+    } else {
+      reportableErrorMessage = `An unknown error occurred while fetching '${urlString}'.`;
+    }
+
+    return NextResponse.json({ error: reportableErrorMessage }, { status: 500 });
   }
 }
-
-    
