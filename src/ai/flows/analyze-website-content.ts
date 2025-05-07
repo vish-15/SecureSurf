@@ -29,6 +29,8 @@ const AnalyzeWebsiteContentOutputSchema = z.object({
   reputationDescription: z
     .string()
     .describe('A description of why the domain has this reputation'),
+  reputationCategory: z.enum(['Super Safe', 'Safe', 'Medium', 'Low', 'Critical', 'Unknown'])
+    .describe('The safety category of the domain based on its reputation.'),
 });
 export type AnalyzeWebsiteContentOutput = z.infer<typeof AnalyzeWebsiteContentOutputSchema>;
 
@@ -75,15 +77,16 @@ const analyzeWebsiteContentFlow = ai.defineFlow<
     outputSchema: AnalyzeWebsiteContentOutputSchema,
   },
   async input => {
-    const {output} = await analyzeWebsiteContentPrompt(input);
+    const {output: promptOutput} = await analyzeWebsiteContentPrompt(input);
 
     const reputation = await getReputation(input.url);
 
     return {
-      threatLevel: output!.threatLevel,
-      threatDescription: output!.threatDescription,
+      threatLevel: promptOutput!.threatLevel,
+      threatDescription: promptOutput!.threatDescription,
       reputationScore: reputation.reputationScore,
       reputationDescription: reputation.reputationDescription,
+      reputationCategory: reputation.category,
     };
   }
 );

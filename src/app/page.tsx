@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { analyzeWebsiteContent, type AnalyzeWebsiteContentOutput } from '@/ai/flows/analyze-website-content';
-import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle, Trash2, History, Moon, Sun, RotateCcw } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Loader2, ExternalLink, AlertCircle, Trash2, History, Moon, Sun, RotateCcw, VerifiedIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -105,8 +105,14 @@ export default function Home() {
     try {
       const fetchResponse = await fetch(`/api/fetch-content?url=${encodeURIComponent(data.url)}`);
       if (!fetchResponse.ok) {
-        const errorData = await fetchResponse.json();
-        throw new Error(errorData.error || `Failed to fetch website content (status: ${fetchResponse.status})`);
+        let errorMessage = `Failed to fetch website content (status: ${fetchResponse.status})`;
+        try {
+            const errorData = await fetchResponse.json();
+            errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+            // If parsing JSON fails, use the default error message
+        }
+        throw new Error(errorMessage);
       }
       const { content: websiteContent } = await fetchResponse.json();
 
@@ -138,16 +144,28 @@ export default function Home() {
 
   const getSafetyIndicator = (score: number | undefined): React.ReactNode => {
     if (score === undefined) return <ShieldQuestion className="h-5 w-5 text-muted-foreground" />;
-    if (score >= 80) return <ShieldCheck className="h-5 w-5 text-green-500" />;
-    if (score >= 50) return <ShieldAlert className="h-5 w-5 text-yellow-500" />;
-    return <ShieldX className="h-5 w-5 text-red-500" />;
+    if (score >= 90) return <ShieldCheck className="h-5 w-5 text-purple-600" />; // Super Safe
+    if (score >= 70) return <ShieldCheck className="h-5 w-5 text-green-500" />;   // Safe
+    if (score >= 50) return <ShieldAlert className="h-5 w-5 text-orange-500" />; // Medium
+    if (score >= 30) return <ShieldAlert className="h-5 w-5 text-yellow-500" />; // Low
+    return <ShieldX className="h-5 w-5 text-red-500" />; // Critical
   };
+  
+  const getReputationCategoryColor = (score: number | undefined): string => {
+    if (score === undefined) return 'text-muted-foreground';
+    if (score >= 90) return 'text-purple-600';
+    if (score >= 70) return 'text-green-500';
+    if (score >= 50) return 'text-orange-500';
+    if (score >= 30) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
 
   const getThreatLevelColor = (level: string | undefined): string => {
     switch (level?.toLowerCase()) {
       case 'high': return 'text-red-500';
       case 'medium': return 'text-yellow-500';
-      case 'low': return 'text-blue-500';
+      case 'low': return 'text-blue-500'; // Kept as blue for AI, distinct from reputation's 'low'
       case 'safe': return 'text-green-500';
       default: return 'text-muted-foreground';
     }
@@ -157,7 +175,7 @@ export default function Home() {
      switch (level?.toLowerCase()) {
       case 'high': return <ShieldX className="h-5 w-5 text-red-500" />;
       case 'medium': return <ShieldAlert className="h-5 w-5 text-yellow-500" />;
-      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500" />;
+      case 'low': return <ShieldCheck className="h-5 w-5 text-blue-500" />; // Kept as blue ShieldCheck
       case 'safe': return <ShieldCheck className="h-5 w-5 text-green-500" />;
       default: return <ShieldQuestion className="h-5 w-5 text-muted-foreground" />;
     }
@@ -266,12 +284,12 @@ export default function Home() {
                  <div>
                     <h3 className="text-lg font-semibold mb-1 flex items-center">
                       {getSafetyIndicator(analysisResult.reputationScore)}
-                      <span className="ml-2">Domain Reputation</span>
+                      <span className="ml-2">Domain Reputation: <span className={`${getReputationCategoryColor(analysisResult.reputationScore)} font-semibold`}>{analysisResult.reputationCategory}</span></span>
                     </h3>
-                    <p className="text-sm text-muted-foreground">{analysisResult.reputationDescription || 'No reputation details available.'}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{analysisResult.reputationDescription || 'No reputation details available.'}</p>
                  </div>
                  <div className="text-center w-full sm:w-auto mt-2 sm:mt-0">
-                   <div className="text-3xl font-bold">{analysisResult.reputationScore ?? '--'} / 100</div>
+                   <div className={`text-3xl font-bold ${getReputationCategoryColor(analysisResult.reputationScore)}`}>{analysisResult.reputationScore ?? '--'} / 100</div>
                    <Progress value={analysisResult.reputationScore} className="w-full sm:w-24 h-2 mt-2" aria-label={`Reputation Score: ${analysisResult.reputationScore ?? 'Unknown'} out of 100`} />
                  </div>
               </div>
@@ -325,7 +343,7 @@ export default function Home() {
                                 <span className={`ml-1 font-medium ${getThreatLevelColor(item.threatLevel)}`}>{item.threatLevel?.charAt(0).toUpperCase() + item.threatLevel?.slice(1)}</span>
                                 <span className="mx-2">|</span>
                                 {getSafetyIndicator(item.reputationScore)}
-                                <span className="ml-1">{item.reputationScore}/100</span>
+                                <span className={`ml-1 font-medium ${getReputationCategoryColor(item.reputationScore)}`}>{item.reputationScore}/100 ({item.reputationCategory})</span>
                             </div>
                            </div>
                           <p className="text-xs text-muted-foreground pt-1">
@@ -376,5 +394,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
