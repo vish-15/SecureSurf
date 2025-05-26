@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -9,7 +10,7 @@ export function BrowserExtensionTeaser() {
   return (
     <Card className="shadow-lg overflow-hidden">
       <div className="md:flex">
-        <div className="md:w-1/2">
+        <div className="md:w-1/3"> {/* Changed from md:w-1/2 */}
           <CardHeader>
             <div className="flex items-center text-primary mb-2">
               <Zap className="h-6 w-6 mr-2" />
@@ -33,7 +34,7 @@ export function BrowserExtensionTeaser() {
             </p>
           </CardContent>
         </div>
-        <div className="md:w-1/2 relative min-h-[200px] md:min-h-full">
+        <div className="md:w-2/3 relative min-h-[200px] md:min-h-full"> {/* Changed from md:w-1/2 */}
            <Image
             src="https://placehold.co/600x400.png"
             alt="Browser extension interface mockup"
