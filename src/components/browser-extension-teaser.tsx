@@ -13,7 +13,7 @@ export function BrowserExtensionTeaser() {
           <CardHeader>
             <div className="flex items-center text-primary mb-2">
               <Zap className="h-6 w-6 mr-2" />
-              <CardTitle className="text-2xl">Surf Smarter, Not Harder</CardTitle>
+              <CardTitle className="text-2xl">Browse smarter, surf securely</CardTitle>
             </div>
             <CardDescription className="text-base">
               Get real-time protection with the upcoming SecureSurf browser extension. Automatic threat detection, instant alerts, and peace of mind as you browse.
@@ -38,3 +38,4 @@ export function BrowserExtensionTeaser() {
     </Card>
   );
 }
+
