@@ -48,6 +48,8 @@ const prompt = ai.definePrompt({
   output: {schema: AnalyzeWebsiteContentOutputSchema},
   prompt: `You are a security expert analyzing websites for malicious content.
 
+  When assessing the \`threatLevel\`, be cautious about marking common, everyday websites as 'dangerous' or overly 'suspicious' unless there are clear, significant indicators of malicious activity. Standard informational sites, blogs, e-commerce platforms, or company websites should generally be treated with a degree of leniency if they lack overt, high-risk threats. Focus on identifying genuine phishing, malware distribution, or other clearly harmful behaviors.
+
   Analyze the content of the following website for phishing attempts, malware distribution, and other malicious activities.
 
   URL: {{{url}}}
@@ -81,3 +83,4 @@ const analyzeWebsiteContentFlow = ai.defineFlow(
     return output!;
   }
 );
+
