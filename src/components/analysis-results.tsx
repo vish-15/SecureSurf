@@ -148,11 +148,6 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Threat Level</h3>
-          <p className={`text-lg font-semibold ${color}`}>{analysis.threatLevel.charAt(0).toUpperCase() + analysis.threatLevel.slice(1).replace(/([A-Z])/g, ' $1').trim()}</p>
-        </div>
-        
-        <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-1">Summary</h3>
           <p className="text-foreground">{analysis.threatDescription || "No specific threats detailed."}</p>
         </div>
@@ -172,10 +167,6 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
           <p className="text-sm text-muted-foreground mt-1">{analysis.reputationDescription || "No reputation details."}</p>
         </div>
         
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Safety Category</h3>
-          <p className={`font-medium ${color}`}>{analysis.overallSafetyCategory}</p>
-        </div>
       </CardContent>
       <style jsx>{`
         @keyframes fadeIn {
@@ -189,3 +180,4 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
     </Card>
   );
 }
+
