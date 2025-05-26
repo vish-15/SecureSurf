@@ -46,8 +46,10 @@
     --super-safe-background: 270 70% 50%;
     --safe-blue-foreground: 210 85% 55%; /* Bright Blue */
     --safe-blue-background: 210 85% 45%;
-    --moderate-yellow-foreground: 48 90% 50%; /* Yellow */
-    --moderate-yellow-background: 48 90% 45%;
+    --moderate-green-foreground: 120 60% 35%; /* Green */
+    --moderate-green-background: 120 60% 45%;
+    --suspicious-yellow-foreground: 48 90% 50%; /* Yellow */
+    --suspicious-yellow-background: 48 90% 45%;
     --unsafe-orange-foreground: 28 95% 55%; /* Orange */
     --unsafe-orange-background: 28 95% 50%;
     /* Destructive is used for High Risk (Red) */
@@ -93,8 +95,10 @@
     --super-safe-background: 270 70% 60%;
     --safe-blue-foreground: 210 85% 65%;
     --safe-blue-background: 210 85% 55%;
-    --moderate-yellow-foreground: 48 90% 60%;
-    --moderate-yellow-background: 48 90% 55%;
+    --moderate-green-foreground: 120 60% 70%; /* Green */
+    --moderate-green-background: 120 60% 60%;
+    --suspicious-yellow-foreground: 48 90% 60%; /* Yellow */
+    --suspicious-yellow-background: 48 90% 55%;
     --unsafe-orange-foreground: 28 95% 65%;
     --unsafe-orange-background: 28 95% 60%;
   }

@@ -2,11 +2,11 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, ShieldAlert, ShieldCheck, Info, Award, Sparkles } from "lucide-react";
+import { AlertTriangle, ShieldAlert, ShieldCheck, Info, Award } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { AnalysisData, ThreatLevel as AppThreatLevel } from "@/lib/types"; // Renamed to avoid conflict
+import type { AnalysisData, ThreatLevel as AppThreatLevel } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type AnalysisResultsProps = {
@@ -19,7 +19,7 @@ const getThreatStyling = (level: AppThreatLevel | undefined) => {
   switch (level) {
     case "superSafe":
       return {
-        Icon: Award, // Or Sparkles
+        Icon: Award,
         color: "text-[hsl(var(--super-safe-foreground))]",
         indicatorClassName: "bg-[hsl(var(--super-safe-background))]",
         text: "Super Safe",
@@ -34,17 +34,17 @@ const getThreatStyling = (level: AppThreatLevel | undefined) => {
       };
     case "moderatelySafe":
       return {
-        Icon: AlertTriangle, // Or Info
-        color: "text-[hsl(var(--moderate-yellow-foreground))]",
-        indicatorClassName: "bg-[hsl(var(--moderate-yellow-background))]",
+        Icon: ShieldCheck, // Changed from AlertTriangle
+        color: "text-[hsl(var(--moderate-green-foreground))]",
+        indicatorClassName: "bg-[hsl(var(--moderate-green-background))]",
         text: "Moderately Safe",
       };
     case "suspiciousYellow":
     case "suspicious": // Backward compatibility
       return {
         Icon: AlertTriangle,
-        color: "text-[hsl(var(--moderate-yellow-foreground))]", // Using same yellow for suspicious
-        indicatorClassName: "bg-[hsl(var(--moderate-yellow-background))]",
+        color: "text-[hsl(var(--suspicious-yellow-foreground))]", 
+        indicatorClassName: "bg-[hsl(var(--suspicious-yellow-background))]",
         text: "Suspicious",
       };
     case "unsafeOrange":
@@ -58,7 +58,7 @@ const getThreatStyling = (level: AppThreatLevel | undefined) => {
     case "dangerous": // Backward compatibility
       return {
         Icon: ShieldAlert,
-        color: "text-destructive", // Uses existing theme variable for red
+        color: "text-destructive", 
         indicatorClassName: "bg-destructive",
         text: "High Risk",
       };
@@ -79,7 +79,6 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
     if (analysis && analysis.domainReputationScoreMin !== undefined && analysis.domainReputationScoreMax !== undefined) {
       const { domainReputationScoreMin, domainReputationScoreMax } = analysis;
       if (domainReputationScoreMin <= domainReputationScoreMax) {
-        // Ensure score stays within 0-100
         const min = Math.max(0, domainReputationScoreMin);
         const max = Math.min(100, domainReputationScoreMax);
         const score = min + Math.random() * (max - min);
@@ -180,4 +179,3 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
     </Card>
   );
 }
-

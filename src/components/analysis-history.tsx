@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import type { HistoryItem, ThreatLevel as AppThreatLevel } from "@/lib/types"; // Renamed to avoid conflict
+import type { HistoryItem, ThreatLevel as AppThreatLevel } from "@/lib/types"; 
 import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Info, Award } from "lucide-react";
 
@@ -24,10 +24,10 @@ const getThreatDetails = (level: AppThreatLevel | undefined) => {
     case "safe": // Backward compatibility
       return { IconCmp: ShieldCheck, colorClass: "text-[hsl(var(--safe-blue-foreground))]" };
     case "moderatelySafe":
-      return { IconCmp: AlertTriangle, colorClass: "text-[hsl(var(--moderate-yellow-foreground))]" };
+      return { IconCmp: ShieldCheck, colorClass: "text-[hsl(var(--moderate-green-foreground))]" }; // Changed icon and color
     case "suspiciousYellow":
     case "suspicious": // Backward compatibility
-      return { IconCmp: AlertTriangle, colorClass: "text-[hsl(var(--moderate-yellow-foreground))]" };
+      return { IconCmp: AlertTriangle, colorClass: "text-[hsl(var(--suspicious-yellow-foreground))]" };
     case "unsafeOrange":
       return { IconCmp: ShieldAlert, colorClass: "text-[hsl(var(--unsafe-orange-foreground))]" };
     case "highRisk":
