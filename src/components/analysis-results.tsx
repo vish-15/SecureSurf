@@ -112,7 +112,7 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
 
   const { Icon, color, bgColor, text } = getThreatStyling(analysis.threatLevel);
   const scoreMin = analysis.domainReputationScoreMin ?? 0;
-  const scoreMax = analysis.domainReputationScoreMax ?? 0;
+  // scoreMax is available if needed in the future, but not directly displayed per new request.
 
   return (
     <Card className="shadow-lg animate-fadeIn">
@@ -137,12 +137,16 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">
-            Domain Reputation 
-            {displayedScore !== null 
-              ? ` (${displayedScore}/100, Range: ${scoreMin}-${scoreMax})` 
-              : ` (Range: ${scoreMin}-${scoreMax})`}
-          </h3>
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Domain Reputation 
+            </h3>
+            {displayedScore !== null && (
+              <span className={`text-xl font-bold ${color}`}>
+                {displayedScore}/100
+              </span>
+            )}
+          </div>
           <Progress value={displayedScore ?? scoreMin} className={`h-3 ${bgColor ? `[&>div]:bg-[${bgColor}]` : ''}`} indicatorClassName={bgColor} />
           <p className="text-sm text-muted-foreground mt-1">{analysis.reputationDescription || "No reputation details."}</p>
         </div>
