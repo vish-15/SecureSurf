@@ -50,6 +50,8 @@ const prompt = ai.definePrompt({
 
   When assessing the \`threatLevel\`, be cautious about marking common, everyday websites as 'dangerous' or overly 'suspicious' unless there are clear, significant indicators of malicious activity. Standard informational sites, blogs, e-commerce platforms, or company websites should generally be treated with a degree of leniency if they lack overt, high-risk threats. Focus on identifying genuine phishing, malware distribution, or other clearly harmful behaviors.
 
+  Regarding the \`domainReputationScoreMin\` and \`domainReputationScoreMax\`: For websites that appear to be legitimate and do not exhibit obvious high-risk indicators, aim for reputation scores that reflect a general assumption of safety (e.g., scores generally above 60-70), unless specific strong negative signals are detected. The range between min and max should still capture reasonable uncertainty or variability in assessment, but the baseline for average, non-threatening sites should be higher to avoid them appearing overly unsafe. A wider range can be used if confidence is lower.
+
   Analyze the content of the following website for phishing attempts, malware distribution, and other malicious activities.
 
   URL: {{{url}}}
