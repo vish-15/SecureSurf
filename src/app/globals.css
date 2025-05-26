@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,6 +40,17 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* New Score-based Accent Colors */
+    --super-safe-foreground: 270 70% 60%; /* Purple */
+    --super-safe-background: 270 70% 50%;
+    --safe-blue-foreground: 210 85% 55%; /* Bright Blue */
+    --safe-blue-background: 210 85% 45%;
+    --moderate-yellow-foreground: 48 90% 50%; /* Yellow */
+    --moderate-yellow-background: 48 90% 45%;
+    --unsafe-orange-foreground: 28 95% 55%; /* Orange */
+    --unsafe-orange-background: 28 95% 50%;
+    /* Destructive is used for High Risk (Red) */
   }
 
   .dark {
@@ -75,6 +87,16 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* New Score-based Accent Colors - Dark Theme */
+    --super-safe-foreground: 270 70% 70%;
+    --super-safe-background: 270 70% 60%;
+    --safe-blue-foreground: 210 85% 65%;
+    --safe-blue-background: 210 85% 55%;
+    --moderate-yellow-foreground: 48 90% 60%;
+    --moderate-yellow-background: 48 90% 55%;
+    --unsafe-orange-foreground: 28 95% 65%;
+    --unsafe-orange-background: 28 95% 60%;
   }
 }
 

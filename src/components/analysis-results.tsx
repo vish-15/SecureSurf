@@ -2,11 +2,11 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, Shield, ShieldAlert, ShieldCheck, Info } from "lucide-react";
+import { AlertTriangle, ShieldAlert, ShieldCheck, Info, Award, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { AnalysisData, ThreatLevel } from "@/lib/types";
+import type { AnalysisData, ThreatLevel as AppThreatLevel } from "@/lib/types"; // Renamed to avoid conflict
 import { Skeleton } from "@/components/ui/skeleton";
 
 type AnalysisResultsProps = {
@@ -15,38 +15,58 @@ type AnalysisResultsProps = {
   error: string | null;
 };
 
-const getThreatStyling = (level: ThreatLevel | undefined) => {
+const getThreatStyling = (level: AppThreatLevel | undefined) => {
   switch (level) {
-    case "safe":
+    case "superSafe":
+      return {
+        Icon: Award, // Or Sparkles
+        color: "text-[hsl(var(--super-safe-foreground))]",
+        indicatorClassName: "bg-[hsl(var(--super-safe-background))]",
+        text: "Super Safe",
+      };
+    case "safeBlue":
+    case "safe": // Backward compatibility
       return {
         Icon: ShieldCheck,
-        color: "text-green-600 dark:text-green-400",
-        bgColor: "bg-green-500",
-        borderColor: "border-green-500",
+        color: "text-[hsl(var(--safe-blue-foreground))]",
+        indicatorClassName: "bg-[hsl(var(--safe-blue-background))]",
         text: "Safe",
       };
-    case "suspicious":
+    case "moderatelySafe":
+      return {
+        Icon: AlertTriangle, // Or Info
+        color: "text-[hsl(var(--moderate-yellow-foreground))]",
+        indicatorClassName: "bg-[hsl(var(--moderate-yellow-background))]",
+        text: "Moderately Safe",
+      };
+    case "suspiciousYellow":
+    case "suspicious": // Backward compatibility
       return {
         Icon: AlertTriangle,
-        color: "text-yellow-500 dark:text-yellow-400",
-        bgColor: "bg-yellow-500",
-        borderColor: "border-yellow-500",
+        color: "text-[hsl(var(--moderate-yellow-foreground))]", // Using same yellow for suspicious
+        indicatorClassName: "bg-[hsl(var(--moderate-yellow-background))]",
         text: "Suspicious",
       };
-    case "dangerous":
+    case "unsafeOrange":
       return {
         Icon: ShieldAlert,
-        color: "text-destructive",
-        bgColor: "bg-destructive",
-        borderColor: "border-destructive",
-        text: "Dangerous",
+        color: "text-[hsl(var(--unsafe-orange-foreground))]",
+        indicatorClassName: "bg-[hsl(var(--unsafe-orange-background))]",
+        text: "Unsafe",
+      };
+    case "highRisk":
+    case "dangerous": // Backward compatibility
+      return {
+        Icon: ShieldAlert,
+        color: "text-destructive", // Uses existing theme variable for red
+        indicatorClassName: "bg-destructive",
+        text: "High Risk",
       };
     default:
       return {
         Icon: Info,
         color: "text-muted-foreground",
-        bgColor: "bg-muted",
-        borderColor: "border-muted",
+        indicatorClassName: "bg-muted",
         text: "Unknown",
       };
   }
@@ -59,14 +79,16 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
     if (analysis && analysis.domainReputationScoreMin !== undefined && analysis.domainReputationScoreMax !== undefined) {
       const { domainReputationScoreMin, domainReputationScoreMax } = analysis;
       if (domainReputationScoreMin <= domainReputationScoreMax) {
-        const score = domainReputationScoreMin + Math.random() * (domainReputationScoreMax - domainReputationScoreMin);
+        // Ensure score stays within 0-100
+        const min = Math.max(0, domainReputationScoreMin);
+        const max = Math.min(100, domainReputationScoreMax);
+        const score = min + Math.random() * (max - min);
         setDisplayedScore(Math.round(score));
       } else {
-        // Fallback if min > max (e.g. AI error), use min
-        setDisplayedScore(Math.round(domainReputationScoreMin));
+        setDisplayedScore(Math.round(Math.min(100, Math.max(0, domainReputationScoreMin))));
       }
     } else {
-      setDisplayedScore(null); // Reset if analysis is null or scores are missing
+      setDisplayedScore(null);
     }
   }, [analysis]);
 
@@ -110,9 +132,8 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
     return null;
   }
 
-  const { Icon, color, bgColor, text } = getThreatStyling(analysis.threatLevel);
+  const { Icon, color, indicatorClassName, text } = getThreatStyling(analysis.threatLevel);
   const scoreMin = analysis.domainReputationScoreMin ?? 0;
-  // scoreMax is available if needed in the future, but not directly displayed per new request.
 
   return (
     <Card className="shadow-lg animate-fadeIn">
@@ -121,14 +142,14 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
           <Icon className={`h-10 w-10 ${color}`} />
           <div>
             <CardTitle className={`text-2xl ${color}`}>{text}</CardTitle>
-            <CardDescription>Overall Safety Assessment</CardDescription>
+            <CardDescription>Overall Safety Assessment for {analysis.overallSafetyCategory}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-1">Threat Level</h3>
-          <p className={`text-lg font-semibold ${color}`}>{analysis.threatLevel.charAt(0).toUpperCase() + analysis.threatLevel.slice(1)}</p>
+          <p className={`text-lg font-semibold ${color}`}>{analysis.threatLevel.charAt(0).toUpperCase() + analysis.threatLevel.slice(1).replace(/([A-Z])/g, ' $1').trim()}</p>
         </div>
         
         <div>
@@ -142,18 +163,18 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
               Domain Reputation 
             </h3>
             {displayedScore !== null && (
-              <span className={`text-xl font-bold ${color}`}>
+              <span className={`text-2xl font-bold ${color}`}>
                 {displayedScore}/100
               </span>
             )}
           </div>
-          <Progress value={displayedScore ?? scoreMin} className={`h-3 ${bgColor ? `[&>div]:bg-[${bgColor}]` : ''}`} indicatorClassName={bgColor} />
+          <Progress value={displayedScore ?? scoreMin} className="h-3" indicatorClassName={indicatorClassName} />
           <p className="text-sm text-muted-foreground mt-1">{analysis.reputationDescription || "No reputation details."}</p>
         </div>
         
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-1">Safety Category</h3>
-          <p className="text-foreground">{analysis.overallSafetyCategory}</p>
+          <p className={`font-medium ${color}`}>{analysis.overallSafetyCategory}</p>
         </div>
       </CardContent>
       <style jsx>{`

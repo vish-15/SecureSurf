@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import type { HistoryItem, ThreatLevel } from "@/lib/types";
+import type { HistoryItem, ThreatLevel as AppThreatLevel } from "@/lib/types"; // Renamed to avoid conflict
 import { formatDistanceToNow } from 'date-fns';
-import { AlertTriangle, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Info } from "lucide-react";
+import { AlertTriangle, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Info, Award } from "lucide-react";
 
 type AnalysisHistoryProps = {
   history: HistoryItem[];
@@ -16,17 +16,35 @@ type AnalysisHistoryProps = {
   isLoading: boolean;
 };
 
-const ThreatIcon = ({ level }: { level: ThreatLevel | undefined }) => {
+const getThreatDetails = (level: AppThreatLevel | undefined) => {
   switch (level) {
-    case "safe":
-      return <ShieldCheck className="h-5 w-5 text-green-500" />;
-    case "suspicious":
-      return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-    case "dangerous":
-      return <ShieldAlert className="h-5 w-5 text-red-500" />;
+    case "superSafe":
+      return { IconCmp: Award, colorClass: "text-[hsl(var(--super-safe-foreground))]" };
+    case "safeBlue":
+    case "safe": // Backward compatibility
+      return { IconCmp: ShieldCheck, colorClass: "text-[hsl(var(--safe-blue-foreground))]" };
+    case "moderatelySafe":
+      return { IconCmp: AlertTriangle, colorClass: "text-[hsl(var(--moderate-yellow-foreground))]" };
+    case "suspiciousYellow":
+    case "suspicious": // Backward compatibility
+      return { IconCmp: AlertTriangle, colorClass: "text-[hsl(var(--moderate-yellow-foreground))]" };
+    case "unsafeOrange":
+      return { IconCmp: ShieldAlert, colorClass: "text-[hsl(var(--unsafe-orange-foreground))]" };
+    case "highRisk":
+    case "dangerous": // Backward compatibility
+      return { IconCmp: ShieldAlert, colorClass: "text-destructive" };
     default:
-      return <Info className="h-5 w-5 text-gray-500" />;
+      return { IconCmp: Info, colorClass: "text-gray-500" };
   }
+};
+
+const ThreatIcon = ({ level }: { level: AppThreatLevel | undefined }) => {
+  const { IconCmp, colorClass } = getThreatDetails(level);
+  return <IconCmp className={`h-5 w-5 ${colorClass}`} />;
+};
+
+const getStatusColorClass = (level: AppThreatLevel | undefined) => {
+  return getThreatDetails(level).colorClass;
 };
 
 export function AnalysisHistory({ history, onReanalyze, onClearHistory, isLoading }: AnalysisHistoryProps) {
@@ -61,6 +79,8 @@ export function AnalysisHistory({ history, onReanalyze, onClearHistory, isLoadin
                 ? `${item.domainReputationScoreMin}-${item.domainReputationScoreMax}`
                 // @ts-expect-error Property 'domainReputationScore' may not exist on type 'HistoryItem' for new items.
                 : item.domainReputationScore?.toString() ?? 'N/A';
+              
+              const statusColorClass = getStatusColorClass(item.threatLevel);
 
               return (
                 <div key={item.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -86,7 +106,7 @@ export function AnalysisHistory({ history, onReanalyze, onClearHistory, isLoadin
                   </div>
                   <Separator className="my-2" />
                    <div className="text-xs text-muted-foreground space-y-0.5">
-                      <p>Status: <span className={`font-medium ${item.threatLevel === 'safe' ? 'text-green-600' : item.threatLevel === 'suspicious' ? 'text-yellow-600' : 'text-red-600'}`}>{item.overallSafetyCategory}</span></p>
+                      <p>Status: <span className={`font-medium ${statusColorClass}`}>{item.overallSafetyCategory}</span></p>
                       <p>Reputation: <span className="font-medium">{reputationText}</span></p>
                       <p className="truncate" title={item.threatDescription}>Summary: {item.threatDescription.length > 60 ? item.threatDescription.substring(0, 60) + '...' : item.threatDescription || 'N/A'}</p>
                    </div>

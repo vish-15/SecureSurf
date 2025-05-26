@@ -18,9 +18,9 @@ export type AnalyzeWebsiteContentInput = z.infer<typeof AnalyzeWebsiteContentInp
 
 const AnalyzeWebsiteContentOutputSchema = z.object({
   threatLevel: z
-    .enum(['safe', 'suspicious', 'dangerous'])
-    .describe('The overall threat level of the website.'),
-  threatDescription: z.string().describe('A description of the potential threats found on the website.'),
+    .enum(['superSafe', 'safeBlue', 'moderatelySafe', 'suspiciousYellow', 'unsafeOrange', 'highRisk'])
+    .describe('The overall threat level of the website, derived strictly from the domain reputation score range.'),
+  threatDescription: z.string().describe('A description of the potential threats found on the website, or a general assessment if no specific threats are found.'),
   domainReputationScoreMin: z
     .number()
     .min(0)
@@ -31,10 +31,10 @@ const AnalyzeWebsiteContentOutputSchema = z.object({
     .min(0)
     .max(100)
     .describe('The maximum estimated domain reputation score, from 0 to 100. This represents the most optimistic, yet plausible, score. Ensure this value is greater than or equal to domainReputationScoreMin.'),
-  reputationDescription: z.string().describe('A description of the domain reputation.'),
+  reputationDescription: z.string().describe('A description of the domain reputation, reflecting the score and category.'),
   overallSafetyCategory: z
     .string()
-    .describe('The overall safety category of the website, e.g., "Phishing", "Malware", "Safe".'),
+    .describe('The overall safety category of the website, derived strictly from the domain reputation score range (e.g., "Super Safe", "Safe", "Moderately Safe", "Suspicious", "Unsafe", "High Risk").'),
 });
 export type AnalyzeWebsiteContentOutput = z.infer<typeof AnalyzeWebsiteContentOutputSchema>;
 
@@ -46,26 +46,25 @@ const prompt = ai.definePrompt({
   name: 'analyzeWebsiteContentPrompt',
   input: {schema: AnalyzeWebsiteContentInputSchema},
   output: {schema: AnalyzeWebsiteContentOutputSchema},
-  prompt: `You are a security expert analyzing websites for malicious content.
+  prompt: `You are a security expert analyzing websites for malicious content and reputation.
 
-  When assessing the \`threatLevel\`, be cautious about marking common, everyday websites as 'dangerous' or overly 'suspicious' unless there are clear, significant indicators of malicious activity. Standard informational sites, blogs, e-commerce platforms, or company websites should generally be treated with a degree of leniency if they lack overt, high-risk threats. Focus on identifying genuine phishing, malware distribution, or other clearly harmful behaviors.
+  Your primary task is to determine the \`domainReputationScoreMin\` and \`domainReputationScoreMax\` for the given URL.
+  For websites that appear to be legitimate and do not exhibit obvious high-risk indicators (e.g., standard informational sites, blogs, e-commerce platforms), aim for reputation scores that reflect a general assumption of safety (e.g., scores generally above 60-70), unless specific strong negative signals are detected. The range between min and max should capture reasonable uncertainty.
 
-  Regarding the \`domainReputationScoreMin\` and \`domainReputationScoreMax\`: For websites that appear to be legitimate and do not exhibit obvious high-risk indicators, aim for reputation scores that reflect a general assumption of safety (e.g., scores generally above 60-70), unless specific strong negative signals are detected. The range between min and max should still capture reasonable uncertainty or variability in assessment, but the baseline for average, non-threatening sites should be higher to avoid them appearing overly unsafe. A wider range can be used if confidence is lower.
+  Once you have determined the score range, you MUST select the \`threatLevel\` and \`overallSafetyCategory\` strictly based on the following score brackets. Use the midpoint or average of your score range for this categorization.
+  - Score > 90: \`threatLevel: 'superSafe'\`, \`overallSafetyCategory: 'Super Safe'\`
+  - Score 80-90: \`threatLevel: 'safeBlue'\`, \`overallSafetyCategory: 'Safe'\`
+  - Score 60-80: \`threatLevel: 'moderatelySafe'\`, \`overallSafetyCategory: 'Moderately Safe'\`
+  - Score 40-60: \`threatLevel: 'suspiciousYellow'\`, \`overallSafetyCategory: 'Suspicious'\`
+  - Score 25-40: \`threatLevel: 'unsafeOrange'\`, \`overallSafetyCategory: 'Unsafe'\`
+  - Score < 25: \`threatLevel: 'highRisk'\`, \`overallSafetyCategory: 'High Risk'\`
 
-  Analyze the content of the following website for phishing attempts, malware distribution, and other malicious activities.
+  The \`threatDescription\` should summarize any identified risks or provide a general safety assessment.
+  The \`reputationDescription\` should briefly explain the reasoning behind the assigned reputation score and category.
 
-  URL: {{{url}}}
+  Analyze the content of the following website: URL: {{{url}}}
 
-  Based on your analysis, provide the following information:
-
-  - threatLevel: The overall threat level of the website (safe, suspicious, or dangerous).
-  - threatDescription: A description of the potential threats found on the website.
-  - domainReputationScoreMin: The lower bound of the estimated domain reputation score (0-100). This represents the most pessimistic, yet plausible, score.
-  - domainReputationScoreMax: The upper bound of the estimated domain reputation score (0-100). This represents the most optimistic, yet plausible, score. Ensure this value is greater than or equal to domainReputationScoreMin. The range between min and max should reflect typical variability or confidence in the assessment.
-  - reputationDescription: A description of the domain reputation.
-  - overallSafetyCategory: The overall safety category of the website (e.g., "Phishing", "Malware", "Safe").
-
-  Ensure that the threatLevel accurately reflects the severity of the identified threats, and that the descriptions are clear and concise.
+  Provide your analysis in the specified output format, ensuring strict adherence to the score-based categorization.
   `,
 });
 
@@ -77,12 +76,11 @@ const analyzeWebsiteContentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    // Ensure max is not less than min, if AI fails to follow instruction
     if (output && output.domainReputationScoreMax < output.domainReputationScoreMin) {
-        // Swap them or set max to min
         output.domainReputationScoreMax = output.domainReputationScoreMin;
     }
+    // Additional validation to ensure AI adheres to score bucketing could be added here if needed,
+    // but the prompt is made very explicit.
     return output!;
   }
 );
-
