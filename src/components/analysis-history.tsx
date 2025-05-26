@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -55,35 +56,43 @@ export function AnalysisHistory({ history, onReanalyze, onClearHistory, isLoadin
       <CardContent>
         <ScrollArea className="h-[300px] pr-4">
           <div className="space-y-4">
-            {history.map((item) => (
-              <div key={item.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <ThreatIcon level={item.threatLevel} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate text-primary" title={item.url}>{item.url}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Analyzed {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                      </p>
+            {history.map((item) => {
+              const reputationText = (item.domainReputationScoreMin !== undefined && item.domainReputationScoreMax !== undefined)
+                ? `${item.domainReputationScoreMin}-${item.domainReputationScoreMax}`
+                // @ts-expect-error Property 'domainReputationScore' may not exist on type 'HistoryItem' for new items.
+                : item.domainReputationScore?.toString() ?? 'N/A';
+
+              return (
+                <div key={item.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ThreatIcon level={item.threatLevel} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate text-primary" title={item.url}>{item.url}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Analyzed {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onReanalyze(item.url)}
+                      disabled={isLoading}
+                      aria-label={`Re-analyze ${item.url}`}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onReanalyze(item.url)}
-                    disabled={isLoading}
-                    aria-label={`Re-analyze ${item.url}`}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
+                  <Separator className="my-2" />
+                   <div className="text-xs text-muted-foreground space-y-0.5">
+                      <p>Status: <span className={`font-medium ${item.threatLevel === 'safe' ? 'text-green-600' : item.threatLevel === 'suspicious' ? 'text-yellow-600' : 'text-red-600'}`}>{item.overallSafetyCategory}</span></p>
+                      <p>Reputation: <span className="font-medium">{reputationText}</span></p>
+                      <p className="truncate" title={item.threatDescription}>Summary: {item.threatDescription.length > 60 ? item.threatDescription.substring(0, 60) + '...' : item.threatDescription || 'N/A'}</p>
+                   </div>
                 </div>
-                <Separator className="my-2" />
-                 <div className="text-xs text-muted-foreground space-y-0.5">
-                    <p>Status: <span className={`font-medium ${item.threatLevel === 'safe' ? 'text-green-600' : item.threatLevel === 'suspicious' ? 'text-yellow-600' : 'text-red-600'}`}>{item.overallSafetyCategory}</span></p>
-                    <p className="truncate" title={item.threatDescription}>Summary: {item.threatDescription.length > 60 ? item.threatDescription.substring(0, 60) + '...' : item.threatDescription || 'N/A'}</p>
-                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>

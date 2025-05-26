@@ -1,5 +1,7 @@
+
 "use client";
 
+import * as React from "react";
 import { AlertTriangle, Shield, ShieldAlert, ShieldCheck, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -51,6 +53,23 @@ const getThreatStyling = (level: ThreatLevel | undefined) => {
 };
 
 export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsProps) {
+  const [displayedScore, setDisplayedScore] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (analysis && analysis.domainReputationScoreMin !== undefined && analysis.domainReputationScoreMax !== undefined) {
+      const { domainReputationScoreMin, domainReputationScoreMax } = analysis;
+      if (domainReputationScoreMin <= domainReputationScoreMax) {
+        const score = domainReputationScoreMin + Math.random() * (domainReputationScoreMax - domainReputationScoreMin);
+        setDisplayedScore(Math.round(score));
+      } else {
+        // Fallback if min > max (e.g. AI error), use min
+        setDisplayedScore(Math.round(domainReputationScoreMin));
+      }
+    } else {
+      setDisplayedScore(null); // Reset if analysis is null or scores are missing
+    }
+  }, [analysis]);
+
   if (isLoading) {
     return (
       <Card className="shadow-lg">
@@ -88,10 +107,12 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
   }
 
   if (!analysis) {
-    return null; 
+    return null;
   }
 
   const { Icon, color, bgColor, text } = getThreatStyling(analysis.threatLevel);
+  const scoreMin = analysis.domainReputationScoreMin ?? 0;
+  const scoreMax = analysis.domainReputationScoreMax ?? 0;
 
   return (
     <Card className="shadow-lg animate-fadeIn">
@@ -116,8 +137,13 @@ export function AnalysisResults({ analysis, isLoading, error }: AnalysisResultsP
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Domain Reputation ({analysis.domainReputationScore}/100)</h3>
-          <Progress value={analysis.domainReputationScore} className={`h-3 ${bgColor ? `[&>div]:bg-[${bgColor}]` : ''}`} indicatorClassName={bgColor} />
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">
+            Domain Reputation 
+            {displayedScore !== null 
+              ? ` (${displayedScore}/100, Range: ${scoreMin}-${scoreMax})` 
+              : ` (Range: ${scoreMin}-${scoreMax})`}
+          </h3>
+          <Progress value={displayedScore ?? scoreMin} className={`h-3 ${bgColor ? `[&>div]:bg-[${bgColor}]` : ''}`} indicatorClassName={bgColor} />
           <p className="text-sm text-muted-foreground mt-1">{analysis.reputationDescription || "No reputation details."}</p>
         </div>
         

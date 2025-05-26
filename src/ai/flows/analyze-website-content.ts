@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Analyzes website content for malicious activities.
@@ -20,11 +21,16 @@ const AnalyzeWebsiteContentOutputSchema = z.object({
     .enum(['safe', 'suspicious', 'dangerous'])
     .describe('The overall threat level of the website.'),
   threatDescription: z.string().describe('A description of the potential threats found on the website.'),
-  domainReputationScore: z
+  domainReputationScoreMin: z
     .number()
     .min(0)
     .max(100)
-    .describe('A score representing the domain reputation, from 0 to 100.'),
+    .describe('The minimum estimated domain reputation score, from 0 to 100. This represents the most pessimistic, yet plausible, score.'),
+  domainReputationScoreMax: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe('The maximum estimated domain reputation score, from 0 to 100. This represents the most optimistic, yet plausible, score. Ensure this value is greater than or equal to domainReputationScoreMin.'),
   reputationDescription: z.string().describe('A description of the domain reputation.'),
   overallSafetyCategory: z
     .string()
@@ -50,7 +56,8 @@ const prompt = ai.definePrompt({
 
   - threatLevel: The overall threat level of the website (safe, suspicious, or dangerous).
   - threatDescription: A description of the potential threats found on the website.
-  - domainReputationScore: A score representing the domain reputation, from 0 to 100.
+  - domainReputationScoreMin: The lower bound of the estimated domain reputation score (0-100). This represents the most pessimistic, yet plausible, score.
+  - domainReputationScoreMax: The upper bound of the estimated domain reputation score (0-100). This represents the most optimistic, yet plausible, score. Ensure this value is greater than or equal to domainReputationScoreMin. The range between min and max should reflect typical variability or confidence in the assessment.
   - reputationDescription: A description of the domain reputation.
   - overallSafetyCategory: The overall safety category of the website (e.g., "Phishing", "Malware", "Safe").
 
@@ -66,6 +73,11 @@ const analyzeWebsiteContentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+    // Ensure max is not less than min, if AI fails to follow instruction
+    if (output && output.domainReputationScoreMax < output.domainReputationScoreMin) {
+        // Swap them or set max to min
+        output.domainReputationScoreMax = output.domainReputationScoreMin;
+    }
     return output!;
   }
 );
