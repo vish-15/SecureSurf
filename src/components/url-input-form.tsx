@@ -49,7 +49,7 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="flex flex-col sm:flex-row sm:items-start sm:space-x-2 space-y-2 sm:space-y-0"
+        className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0"
       >
         <FormField
           control={form.control}
