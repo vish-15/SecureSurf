@@ -73,7 +73,7 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full sm:w-auto shrink-0 h-[38px]"
+          className="w-full sm:w-auto shrink-0 h-[38px] sm:relative sm:top-[4px]"
         >
           {isLoading ? (
             <>
