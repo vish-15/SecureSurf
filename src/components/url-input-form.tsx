@@ -70,7 +70,11 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto shrink-0">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full sm:w-auto shrink-0 sm:relative sm:top-px"
+        >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -84,3 +88,4 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
     </Form>
   );
 }
+
