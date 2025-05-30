@@ -63,7 +63,7 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
                   placeholder="https://example.com"
                   {...field}
                   aria-describedby="url-form-message"
-                  className="text-base"
+                  className="text-base h-[38px] py-[7px] px-[11px]"
                 />
               </FormControl>
               <FormMessage id="url-form-message" />
@@ -73,7 +73,7 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full sm:w-auto shrink-0 sm:relative sm:top-[4px]"
+          className="w-full sm:w-auto shrink-0 h-[38px]"
         >
           {isLoading ? (
             <>
