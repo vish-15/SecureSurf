@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -46,18 +47,21 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="flex flex-col sm:flex-row sm:items-start sm:space-x-2 space-y-2 sm:space-y-0"
+      >
         <FormField
           control={form.control}
           name="url"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex-grow w-full sm:w-auto">
               <FormLabel htmlFor="url-input" className="sr-only">Website URL</FormLabel>
               <FormControl>
-                <Input 
+                <Input
                   id="url-input"
-                  placeholder="https://example.com" 
-                  {...field} 
+                  placeholder="https://example.com"
+                  {...field}
                   aria-describedby="url-form-message"
                   className="text-base"
                 />
@@ -66,7 +70,7 @@ export function UrlInputForm({ onSubmit, isLoading, initialUrl }: UrlInputFormPr
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto shrink-0">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
